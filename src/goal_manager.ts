@@ -1,4 +1,4 @@
-import type { ReadonlySessionManager } from "@mariozechner/pi-coding-agent/dist/core/session-manager";
+import type { SessionEntry } from "@mariozechner/pi-coding-agent";
 import { Type, type Static } from "typebox";
 import { Value } from "typebox/value";
 
@@ -20,7 +20,7 @@ export type GoalState = Static<typeof GoalStateSchema>;
 export class GoalManager {
   state: GoalState;
 
-  constructor(sm: Pick<ReadonlySessionManager, "getEntries">) {
+  constructor(sm: { getEntries(): SessionEntry[] }) {
     const entries = sm.getEntries();
     entries.reverse();
     for (const entry of entries) {
@@ -53,7 +53,8 @@ export class GoalManager {
   resume(): string {
     if (this.state.phase !== "paused") throw new Error("Cannot resume goal while not paused");
     this.state = { phase: "ready", objective: this.state.objective };
-    return this.continue();
+    const prompt = this.continue();
+    return prompt!;
   }
 
   continue(): string | undefined {
