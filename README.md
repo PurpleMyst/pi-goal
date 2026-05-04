@@ -13,6 +13,8 @@ pi install git:github.com/PurpleMyst/pi-goal
 
 - Run `/goal <GOAL>` to set a goal for the agent. This is session-scoped; it is saved inside the
   regular session jsonlines files, and will be loaded when the session is loaded.
+- Run `/goal pause` to pause the agent; it will still allow the current turn to end, but there will
+  be no new turns until the goal is resumed.
 - Aborting the agent will set the goal to "paused". This is useful if you want to take a break and come back to the same goal later.
 - Run `/goal resume` to resume the last goal. This is useful if you want to continue working on a goal after a break.
 - Run `/goal clear` to clear the goal.

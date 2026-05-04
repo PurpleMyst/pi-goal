@@ -12,6 +12,8 @@ export default function(pi: ExtensionAPI) {
       if (args.trim().length === 0) {
         ctx.ui.notify(JSON.stringify(gm.state));
         return;
+      } else if (args.trim().toLowerCase() === "pause") {
+        gm.pause();
       } else if (args.trim().toLowerCase() === "resume") {
         prompt = gm.resume();
       } else if (args.trim().toLowerCase() === "clear") {

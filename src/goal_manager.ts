@@ -47,17 +47,17 @@ export class GoalManager {
   ) {
     if (this.state.phase !== "idle") throw new Error("Cannot set objective while not idle");
     this.state = { phase: "ready", objective };
-    return continuationPrompt(objective);
-  }
-
-  continue(): string | undefined {
-    if (this.state.phase !== "ready") return;
-    return continuationPrompt(this.state.objective);
+    return this.continue();
   }
 
   resume(): string {
     if (this.state.phase !== "paused") throw new Error("Cannot resume goal while not paused");
     this.state = { phase: "ready", objective: this.state.objective };
+    return this.continue();
+  }
+
+  continue(): string | undefined {
+    if (this.state.phase !== "ready") return;
     return continuationPrompt(this.state.objective);
   }
 
@@ -68,7 +68,10 @@ export class GoalManager {
 
   complete() {
     if (this.state.phase !== "ready") throw new Error("Cannot complete goal while not ready");
-    this.state = { phase: "idle" };
+    this.clear();
   }
 
+  clear() {
+    this.state = { phase: "idle" };
+  }
 }
