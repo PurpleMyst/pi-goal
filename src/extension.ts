@@ -3,7 +3,7 @@ import { Type } from "typebox";
 
 import { GoalManager, CUSTOM_TYPE } from "./goal_manager";
 
-export default function(pi: ExtensionAPI) {
+export default function (pi: ExtensionAPI) {
   pi.registerCommand("goal", {
     description: "Give the agent a goal.",
     async handler(args, ctx) {
@@ -24,7 +24,7 @@ export default function(pi: ExtensionAPI) {
       if (prompt !== undefined) sendGoalMessage(pi, prompt, gm);
       else pi.appendEntry(CUSTOM_TYPE, gm.state);
       if (ctx.hasUI) ctx.ui.setWidget(CUSTOM_TYPE, gm.status());
-    }
+    },
   });
 
   // Docs specify `ctx.signal.aborted` is set only in turn-related events, not in session-related
@@ -51,7 +51,8 @@ export default function(pi: ExtensionAPI) {
   pi.registerTool({
     name: "update_goal",
     label: "Update Goal Status",
-    description: "Update the status of the current goal. Call with status \"complete\" when the goal is achieved.",
+    description:
+      'Update the status of the current goal. Call with status "complete" when the goal is achieved.',
     parameters: Type.Object({
       status: Type.Literal("complete"),
     }),
@@ -61,28 +62,29 @@ export default function(pi: ExtensionAPI) {
       if (ctx.hasUI) ctx.ui.setWidget(CUSTOM_TYPE, undefined);
       pi.appendEntry(CUSTOM_TYPE, gm.state);
       return {
-        content: [
-          { type: "text", text: "Goal marked complete." }
-        ],
+        content: [{ type: "text", text: "Goal marked complete." }],
         details: {},
         terminate: true,
-      }
-    }
+      };
+    },
   });
 }
 
 function sendGoalMessage(pi: ExtensionAPI, prompt: string, gm: GoalManager) {
   // HACK: Use setTimeout to ensure this runs after the current turn's processing is fully complete,
-  // allowing the message to be properly associated with the next turn. 
+  // allowing the message to be properly associated with the next turn.
   // Not documented behavior, but what works works. ¯\_(ツ)_/¯
   setTimeout(() => {
-    pi.sendMessage({
-      customType: CUSTOM_TYPE,
-      content: prompt,
-      display: true,
-      details: gm.state,
-    }, {
-      triggerTurn: true,
-    });
+    pi.sendMessage(
+      {
+        customType: CUSTOM_TYPE,
+        content: prompt,
+        display: true,
+        details: gm.state,
+      },
+      {
+        triggerTurn: true,
+      },
+    );
   }, 0);
 }

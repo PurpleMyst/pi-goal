@@ -24,9 +24,15 @@ export class GoalManager {
     const entries = sm.getEntries();
     entries.reverse();
     for (const entry of entries) {
-      if ((entry.type === "custom_message" || entry.type === "custom") && entry.customType === CUSTOM_TYPE) {
+      if (
+        (entry.type === "custom_message" || entry.type === "custom") &&
+        entry.customType === CUSTOM_TYPE
+      ) {
         // XXX: ↓ Weird type error here ¯\_(ツ)_/¯
-        this.state = Value.Parse(GoalStateSchema, entry.type === "custom_message" ? entry.details : entry.data);
+        this.state = Value.Parse(
+          GoalStateSchema,
+          entry.type === "custom_message" ? entry.details : entry.data,
+        );
         return;
       }
     }
@@ -36,15 +42,19 @@ export class GoalManager {
   /// Get the current status of the goal manager, fit for widget display.
   status(): string[] | undefined {
     if (this.state.phase === "idle") return undefined;
-    if (this.state.phase === "ready") return [`🥅 Objective: ${this.state.objective.substring(0, 30)}${this.state.objective.length > 30 ? "..." : ""}`];
-    if (this.state.phase === "paused") return [`⏸️ Paused objective: ${this.state.objective.substring(0, 30)}${this.state.objective.length > 30 ? "..." : ""}`];
+    if (this.state.phase === "ready")
+      return [
+        `🥅 Objective: ${this.state.objective.substring(0, 30)}${this.state.objective.length > 30 ? "..." : ""}`,
+      ];
+    if (this.state.phase === "paused")
+      return [
+        `⏸️ Paused objective: ${this.state.objective.substring(0, 30)}${this.state.objective.length > 30 ? "..." : ""}`,
+      ];
     return ["🥅 Unknown state"];
   }
 
-  /// Start a new goal with the given objective. The manager must be idle; if this does not throw, 
-  start(
-    objective: string,
-  ) {
+  /// Start a new goal with the given objective. The manager must be idle; if this does not throw,
+  start(objective: string) {
     if (this.state.phase !== "idle") throw new Error("Cannot set objective while not idle");
     this.state = { phase: "ready", objective };
     return this.continue();

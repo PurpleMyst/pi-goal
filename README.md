@@ -5,6 +5,7 @@
 ## Installation
 
 To install `pi-goal`, run the following command:
+
 ```bash
 pi install git:github.com/PurpleMyst/pi-goal
 ```
@@ -23,7 +24,7 @@ pi install git:github.com/PurpleMyst/pi-goal
 ## Credits
 
 - [Codex](https://github.com/openai/codex) for the original implementation.
-- Geoffrey Huntley's [Ralph Wiggum](https://ghuntley.com/ralph/) for the general pattern.  
+- Geoffrey Huntley's [Ralph Wiggum](https://ghuntley.com/ralph/) for the general pattern.
 - [`@tmustier/pi-ralph-wiggum`](https://github.com/tmustier/pi-extensions/tree/main/pi-ralph-wiggum) for a prior Pi implementation of that idea.
 
 ## Historical note
