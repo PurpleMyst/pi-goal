@@ -1,0 +1,28 @@
+{
+  "name": "pi-goal",
+  "version": "2.0.0",
+  "description": "Non-slop pi-goal implementation.",
+  "keywords": [
+    "pi"
+  ],
+  "private": true,
+  "homepage": "https://github.com/PurpleMyst/pi-goal#readme",
+  "bugs": {
+    "url": "https://github.com/PurpleMyst/pi-goal/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PurpleMyst/pi-goal.git"
+  },
+  "license": "ISC",
+  "author": "PurpleMyst",
+  "type": "commonjs",
+  "main": "src/extension.ts",
+  "scripts": {
+    "test": "npx vitest run"
+  },
+  "peerDependencies": {
+    "@mariozechner/pi-coding-agent": ">=0.69.0",
+    "typebox": "^1.0.0"
+  }
+}
