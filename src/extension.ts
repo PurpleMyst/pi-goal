@@ -98,7 +98,7 @@ export default function (pi: ExtensionAPI) {
   });
 }
 
-/// Sync the active state of the "update_goal" tool based on the current goal state, and update the UI widget.
+/** Sync the active state of the "update_goal" tool based on the current goal state, and update the UI widget. */
 function syncPiState(pi: ExtensionAPI, ctx: ExtensionContext, gm: GoalStateMachine) {
   const activeTools = pi.getActiveTools();
   const isActive = activeTools.includes("update_goal");
@@ -111,8 +111,10 @@ function syncPiState(pi: ExtensionAPI, ctx: ExtensionContext, gm: GoalStateMachi
     ctx.ui.setWidget(CUSTOM_TYPE, gm.state.phase === "idle" ? undefined : gm.status(ctx.ui.theme));
 }
 
-/// Send a message with the given prompt and the current goal state as details.
-/// If there are pending messages or the context is not idle, we pause the goal manager and send the message as an entry instead.
+/**
+ * Send a message with the given prompt and the current goal state as details.
+ * If there are pending messages or the context is not idle, we pause the goal manager and send the message as an entry instead.
+ */
 //  This also calls syncPiState.
 function sendGoalMessage(
   pi: ExtensionAPI,
