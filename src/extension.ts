@@ -43,9 +43,10 @@ export default function (pi: ExtensionAPI) {
 
   pi.on("tool_call", async (_, ctx) => {
     const gm = new GoalStateMachine(goalForSession(ctx.sessionManager));
-    gm.registerToolCall();
-    pi.appendEntry(CUSTOM_TYPE, gm.state);
-    syncPiState(pi, ctx, gm);
+    if (gm.registerToolCall()) {
+      pi.appendEntry(CUSTOM_TYPE, gm.state);
+      syncPiState(pi, ctx, gm);
+    }
   });
 
   // Docs specify `ctx.signal.aborted` is set only in turn-related events, not in session-related
