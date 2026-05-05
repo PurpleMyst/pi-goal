@@ -3,7 +3,8 @@
   "version": "2.0.0",
   "description": "Non-slop pi-goal implementation.",
   "keywords": [
-    "pi"
+    "pi",
+    "pi-package"
   ],
   "private": true,
   "homepage": "https://github.com/PurpleMyst/pi-goal#readme",
@@ -29,5 +30,10 @@
   "devDependencies": {
     "prettier": "^3.8.3",
     "typescript": "^6.0.3"
+  },
+  "pi": {
+    "extensions": [
+      "./src/extension.ts"
+    ]
   }
 }
