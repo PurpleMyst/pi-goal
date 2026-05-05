@@ -24,9 +24,15 @@ export default function (pi: ExtensionAPI) {
       if (prompt !== undefined) sendGoalMessage(pi, prompt, gm);
       else pi.appendEntry(CUSTOM_TYPE, gm.state);
       if (ctx.hasUI) ctx.ui.setWidget(CUSTOM_TYPE, gm.status());
+      syncUpdateGoalTool(pi, gm);
     },
   });
 
+  pi.on("session_start", async (_, ctx) => {
+    const gm = new GoalManager(ctx.sessionManager);
+    if (ctx.hasUI) ctx.ui.setWidget(CUSTOM_TYPE, gm.status());
+    syncUpdateGoalTool(pi, gm);
+  });
   // Docs specify `ctx.signal.aborted` is set only in turn-related events, not in session-related
   // events, so we check here.
   pi.on("turn_end", async (_, ctx) => {
@@ -36,6 +42,7 @@ export default function (pi: ExtensionAPI) {
       ctx.ui.notify("Agent ended due to abort signal; not sending continuation prompt.", "warning");
       gm.pause();
       pi.appendEntry(CUSTOM_TYPE, gm.state);
+      syncUpdateGoalTool(pi, gm);
       return;
     }
   });
@@ -45,6 +52,7 @@ export default function (pi: ExtensionAPI) {
     const prompt = gm.continue();
     if (prompt === undefined) return;
     sendGoalMessage(pi, prompt, gm);
+    syncUpdateGoalTool(pi, gm);
     if (ctx.hasUI) ctx.ui.setWidget(CUSTOM_TYPE, gm.status());
   });
 
@@ -61,6 +69,7 @@ export default function (pi: ExtensionAPI) {
       gm.complete();
       if (ctx.hasUI) ctx.ui.setWidget(CUSTOM_TYPE, undefined);
       pi.appendEntry(CUSTOM_TYPE, gm.state);
+      syncUpdateGoalTool(pi, gm);
       return {
         content: [{ type: "text", text: "Goal marked complete." }],
         details: {},
@@ -68,6 +77,16 @@ export default function (pi: ExtensionAPI) {
       };
     },
   });
+}
+
+function syncUpdateGoalTool(pi: ExtensionAPI, gm: GoalManager) {
+  const activeTools = pi.getActiveTools();
+  const isActive = activeTools.includes("update_goal");
+  if (gm.state.phase === "ready") {
+    if (!isActive) pi.setActiveTools([...activeTools, "update_goal"]);
+  } else if (isActive) {
+    pi.setActiveTools(activeTools.filter((name) => name !== "update_goal"));
+  }
 }
 
 function sendGoalMessage(pi: ExtensionAPI, prompt: string, gm: GoalManager) {
