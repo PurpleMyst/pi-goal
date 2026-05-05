@@ -1,14 +1,15 @@
 import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { Type } from "typebox";
 
-import { GoalManager, CUSTOM_TYPE, NO_TOOL_CALLS } from "./goal_manager";
+import { GoalStateMachine, NO_TOOL_CALLS } from "./goal_state_machine";
+import { CUSTOM_TYPE, goalForSession } from "./goal_finder";
 
 export default function (pi: ExtensionAPI) {
   pi.registerCommand("goal", {
     description: "Give the agent a goal.",
     async handler(args, ctx) {
       let prompt: string | undefined;
-      const gm = new GoalManager(ctx.sessionManager);
+      const gm = new GoalStateMachine(goalForSession(ctx.sessionManager));
       if (args.trim().length === 0) {
         ctx.ui.notify(JSON.stringify(gm.state));
         return;
@@ -32,25 +33,26 @@ export default function (pi: ExtensionAPI) {
         pi.appendEntry(CUSTOM_TYPE, gm.state);
         syncPiState(pi, ctx, gm);
       }
-      if (ctx.hasUI) ctx.ui.setWidget(CUSTOM_TYPE, gm.status());
     },
   });
 
   pi.on("session_start", async (_, ctx) => {
-    const gm = new GoalManager(ctx.sessionManager);
+    const gm = new GoalStateMachine(goalForSession(ctx.sessionManager));
     syncPiState(pi, ctx, gm);
   });
 
   pi.on("tool_call", async (_, ctx) => {
-    const gm = new GoalManager(ctx.sessionManager);
+    const gm = new GoalStateMachine(goalForSession(ctx.sessionManager));
     gm.registerToolCall();
+    pi.appendEntry(CUSTOM_TYPE, gm.state);
+    syncPiState(pi, ctx, gm);
   });
 
   // Docs specify `ctx.signal.aborted` is set only in turn-related events, not in session-related
   // events, so we check here.
   pi.on("turn_end", async (_, ctx) => {
     if (ctx.signal?.aborted) {
-      const gm = new GoalManager(ctx.sessionManager);
+      const gm = new GoalStateMachine(goalForSession(ctx.sessionManager));
       if (gm.state.phase !== "ready") return;
       ctx.ui.notify("Agent ended due to abort signal; not sending continuation prompt.", "warning");
       gm.pause();
@@ -61,7 +63,7 @@ export default function (pi: ExtensionAPI) {
   });
 
   pi.on("agent_end", async (_, ctx) => {
-    const gm = new GoalManager(ctx.sessionManager);
+    const gm = new GoalStateMachine(goalForSession(ctx.sessionManager));
     const prompt = gm.continue();
     if (prompt === undefined) return;
     if (prompt === NO_TOOL_CALLS) {
@@ -83,7 +85,7 @@ export default function (pi: ExtensionAPI) {
       status: Type.Literal("complete"),
     }),
     async execute(_toolCallId, _params, _signal, _onUpdate, ctx) {
-      const gm = new GoalManager(ctx.sessionManager);
+      const gm = new GoalStateMachine(goalForSession(ctx.sessionManager));
       gm.complete();
       pi.appendEntry(CUSTOM_TYPE, gm.state);
       syncPiState(pi, ctx, gm);
@@ -97,7 +99,7 @@ export default function (pi: ExtensionAPI) {
 }
 
 /// Sync the active state of the "update_goal" tool based on the current goal state, and update the UI widget.
-function syncPiState(pi: ExtensionAPI, ctx: ExtensionContext, gm: GoalManager) {
+function syncPiState(pi: ExtensionAPI, ctx: ExtensionContext, gm: GoalStateMachine) {
   const activeTools = pi.getActiveTools();
   const isActive = activeTools.includes("update_goal");
   if (gm.state.phase === "ready") {
@@ -105,13 +107,19 @@ function syncPiState(pi: ExtensionAPI, ctx: ExtensionContext, gm: GoalManager) {
   } else if (isActive) {
     pi.setActiveTools(activeTools.filter((name) => name !== "update_goal"));
   }
-  if (ctx.hasUI) ctx.ui.setWidget(CUSTOM_TYPE, undefined);
+  if (ctx.hasUI)
+    ctx.ui.setWidget(CUSTOM_TYPE, gm.state.phase === "idle" ? undefined : gm.status(ctx.ui.theme));
 }
 
 /// Send a message with the given prompt and the current goal state as details.
 /// If there are pending messages or the context is not idle, we pause the goal manager and send the message as an entry instead.
 //  This also calls syncPiState.
-function sendGoalMessage(pi: ExtensionAPI, ctx: ExtensionContext, prompt: string, gm: GoalManager) {
+function sendGoalMessage(
+  pi: ExtensionAPI,
+  ctx: ExtensionContext,
+  prompt: string,
+  gm: GoalStateMachine,
+) {
   gm.resetToolCalls();
   syncPiState(pi, ctx, gm);
 
