@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import type { ExtensionAPI, SessionEntry } from "@mariozechner/pi-coding-agent";
 import extension from "../src/extension";
-import { CUSTOM_TYPE } from "../src/goal_manager";
+import { CUSTOM_TYPE } from "../src/goal_finder";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -45,11 +45,12 @@ interface MockAPI {
   getEntries: () => SessionEntry[];
 }
 
+const mockTheme = { fg: (_style: string, text: string) => text };
+
 /** Create a mock ExtensionAPI wired to a shared MockAPI state bag. */
 function createMockAPI(bag: MockAPI): ExtensionAPI {
   const sessionManager = { getEntries: () => bag.getEntries() };
 
-  // HACK: nested map so each test can attach its own mock
   const ui = {
     notify: (message: string, type?: string) => {
       bag.notifyCalls.push({ message, type });
@@ -57,6 +58,8 @@ function createMockAPI(bag: MockAPI): ExtensionAPI {
     setWidget: (key: string, content: any) => {
       bag.setWidgetCalls.push({ key, content });
     },
+    theme: mockTheme,
+    confirm: (_title: string, _message: string) => Promise.resolve(true),
   };
 
   const api = {
@@ -102,6 +105,8 @@ function buildCtx(bag: MockAPI, overrides: Record<string, unknown> = {}) {
       setWidget: (key: string, content: any) => {
         bag.setWidgetCalls.push({ key, content });
       },
+      theme: mockTheme,
+      confirm: (_title: string, _message: string) => Promise.resolve(true),
     },
     hasUI: true,
     cwd: "/test",
@@ -220,7 +225,7 @@ describe("extension", () => {
     await cmd.handler("some objective", ctx);
     vi.runAllTimers();
 
-    // Now feed the entry so the next GoalManager picks it up
+    // Now feed the entry so the next GoalStateMachine picks it up
     bag.getEntries = () => [
       entry({ type: "custom", customType: CUSTOM_TYPE, data: { phase: "ready", objective: "some objective" } }),
     ];
@@ -236,7 +241,7 @@ describe("extension", () => {
     expect(bag.appendEntryCalls[0].customType).toBe(CUSTOM_TYPE);
     expect((bag.appendEntryCalls[0].data as any).phase).toBe("paused");
     expect(bag.setWidgetCalls.length).toBe(1);
-    expect(bag.setWidgetCalls[0].content![0]).toContain("Paused objective");
+    expect(bag.setWidgetCalls[0].content![0]).toContain("some objective");
   });
 
   // -- /goal resume ---------------------------------------------------------
@@ -335,7 +340,6 @@ describe("extension", () => {
     // When state is idle, goal tools should NOT be active
     bag.activeTools = ["foo"];
     handler.handler({ type: "session_start", reason: "startup" }, ctx);
-    // idle → shouldHave is false, has is false → no change
     expect(bag.setActiveToolsCalls.length).toBe(0);
 
     // When state is ready, goal tools should be added
@@ -384,11 +388,11 @@ describe("extension", () => {
 
   // -- agent_end event ------------------------------------------------------
 
-  it("agent_end continues when goal is ready", async () => {
+  it("agent_end continues when goal is ready and tools were used", async () => {
     const handler = bag.handlers.find(h => h.event === "agent_end")!;
 
     bag.getEntries = () => [
-      entry({ type: "custom", customType: CUSTOM_TYPE, data: { phase: "ready", objective: "keep going" } }),
+      entry({ type: "custom", customType: CUSTOM_TYPE, data: { phase: "ready", objective: "keep going", toolsUsed: 1 } }),
     ];
 
     const ctx = buildCtx(bag);
@@ -401,6 +405,25 @@ describe("extension", () => {
     expect(bag.setWidgetCalls[0].content![0]).toContain("keep going");
   });
 
+  it("agent_end warns without sending continuation when no tools were used", async () => {
+    const handler = bag.handlers.find(h => h.event === "agent_end")!;
+
+    bag.getEntries = () => [
+      entry({ type: "custom", customType: CUSTOM_TYPE, data: { phase: "ready", objective: "no tools used" } }),
+    ];
+
+    const ctx = buildCtx(bag);
+    await handler.handler({ type: "agent_end", messages: [] }, ctx);
+
+    vi.runAllTimers();
+    // Should notify but NOT send continuation; state stays ready
+    expect(bag.sendMessageCalls.length).toBe(0);
+    expect(bag.notifyCalls.length).toBe(1);
+    expect(bag.notifyCalls[0].message).toContain("no tool calls");
+    expect(bag.appendEntryCalls.length).toBe(1);
+    expect((bag.appendEntryCalls[0].data as any).phase).toBe("ready");
+  });
+
   it("agent_end does nothing when goal is idle", async () => {
     const handler = bag.handlers.find(h => h.event === "agent_end")!;
     bag.getEntries = () => [];
@@ -411,9 +434,9 @@ describe("extension", () => {
     expect(bag.sendMessageCalls.length).toBe(0);
   });
 
-  // -- syncGoalTools idempotency --------------------------------------------
+  // -- syncPiState idempotency ----------------------------------------------
 
-  it("syncGoalTools does not modify tools when already in correct state", () => {
+  it("syncPiState does not modify tools when already in correct state", () => {
     const handler = bag.handlers.find(h => h.event === "session_start")!;
     bag.activeTools = ["get_goal", "update_goal"];
     bag.setActiveToolsCalls = [];
@@ -427,7 +450,7 @@ describe("extension", () => {
     expect(bag.setActiveToolsCalls.length).toBe(0);
   });
 
-  it("syncGoalTools removes goal tools when goal is not ready", () => {
+  it("syncPiState removes goal tools when goal is not ready", () => {
     const handler = bag.handlers.find(h => h.event === "session_start")!;
     bag.activeTools = ["get_goal", "update_goal", "other_tool"];
     bag.setActiveToolsCalls = [];
