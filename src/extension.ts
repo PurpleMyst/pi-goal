@@ -71,7 +71,7 @@ export default function (pi: ExtensionAPI) {
     if (prompt === undefined) return;
     if (prompt === NO_TOOL_CALLS) {
       ctx.ui.notify("Previous iteration made no tool calls. Pausing for safety.", "warning");
-      // XXX: ↓ We always call these two as a pair, maybe a little two-line function might be nice to have?
+      gm.pause();
       pi.appendEntry(CUSTOM_TYPE, gm.state);
       syncPiState(pi, ctx, gm);
     } else {

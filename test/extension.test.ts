@@ -416,12 +416,12 @@ describe("extension", () => {
     await handler.handler({ type: "agent_end", messages: [] }, ctx);
 
     vi.runAllTimers();
-    // Should notify but NOT send continuation; state stays ready
+    // Should notify, pause, and not send continuation
     expect(bag.sendMessageCalls.length).toBe(0);
     expect(bag.notifyCalls.length).toBe(1);
     expect(bag.notifyCalls[0].message).toContain("no tool calls");
     expect(bag.appendEntryCalls.length).toBe(1);
-    expect((bag.appendEntryCalls[0].data as any).phase).toBe("ready");
+    expect((bag.appendEntryCalls[0].data as any).phase).toBe("paused");
   });
 
   it("agent_end does nothing when goal is idle", async () => {
