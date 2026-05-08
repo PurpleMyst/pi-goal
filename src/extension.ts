@@ -52,7 +52,7 @@ export default function (pi: ExtensionAPI) {
     name: "update_goal",
     label: "Update Goal Status",
     description:
-      'Update the status of the current goal. Call with status "complete" when the goal is achieved.',
+      'Update the status of the current goal. Call with status "complete" when the goal is achieved. Do not mark a goal complete merely because you are stopping work or the budget is running out — only mark it complete when the objective has actually been achieved and no required work remains.'
     parameters: Type.Object({
       status: Type.Literal("complete"),
     }),
@@ -63,8 +63,7 @@ export default function (pi: ExtensionAPI) {
       pi.appendEntry(CUSTOM_TYPE, gm.state);
       return {
         content: [{ type: "text", text: "Goal marked complete." }],
-        details: {},
-        terminate: true,
+        details: {}
       };
     },
   });
