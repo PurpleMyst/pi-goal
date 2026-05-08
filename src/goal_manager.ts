@@ -39,20 +39,6 @@ export class GoalManager {
     this.state = { phase: "idle" };
   }
 
-  /// Get the current status of the goal manager, fit for widget display.
-  status(): string[] | undefined {
-    if (this.state.phase === "idle") return undefined;
-    if (this.state.phase === "ready")
-      return [
-        `🥅 Objective: ${this.state.objective.substring(0, 30)}${this.state.objective.length > 30 ? "..." : ""}`,
-      ];
-    if (this.state.phase === "paused")
-      return [
-        `⏸️ Paused objective: ${this.state.objective.substring(0, 30)}${this.state.objective.length > 30 ? "..." : ""}`,
-      ];
-    return ["🥅 Unknown state"];
-  }
-
   /// Start a new goal with the given objective. The manager must be idle; if this does not throw,
   start(objective: string) {
     if (this.state.phase !== "idle") throw new Error("Cannot set objective while not idle");
@@ -85,4 +71,17 @@ export class GoalManager {
   clear() {
     this.state = { phase: "idle" };
   }
+}
+
+export function goalWidget(state: GoalState): string[] | undefined {
+  if (state.phase === "idle") return undefined;
+  if (state.phase === "ready")
+    return [
+      `🥅 Objective: ${state.objective.substring(0, 30)}${state.objective.length > 30 ? "..." : ""}`,
+    ];
+  if (state.phase === "paused")
+    return [
+      `⏸️ Paused objective: ${state.objective.substring(0, 30)}${state.objective.length > 30 ? "..." : ""}`,
+    ];
+  return ["🥅 Unknown state"];
 }

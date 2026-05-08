@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { GoalManager, CUSTOM_TYPE } from "../src/goal_manager";
+import { GoalManager, CUSTOM_TYPE, goalWidget } from "../src/goal_manager";
 import type { SessionEntry } from "@mariozechner/pi-coding-agent";
 
 function makeEntry(
@@ -74,45 +74,39 @@ describe("GoalManager constructor", () => {
 });
 
 // ---------------------------------------------------------------------------
-// status()
+// goalWidget()
 // ---------------------------------------------------------------------------
-describe("GoalManager.status", () => {
+describe("goalWidget", () => {
   it("returns undefined when idle", () => {
-    const gm = new GoalManager(sessionManagerWith([]));
-    expect(gm.status()).toBeUndefined();
+    expect(goalWidget({ phase: "idle" })).toBeUndefined();
   });
 
   it("returns the objective for ready state", () => {
-    const gm = new GoalManager(sessionManagerWith([]));
-    gm.state = { phase: "ready", objective: "write all the tests" };
-    const s = gm.status();
+    const s = goalWidget({ phase: "ready", objective: "write all the tests" });
     expect(s).toBeDefined();
     expect(s![0]).toContain("write all the tests");
   });
 
   it("truncates objectives longer than 30 characters", () => {
-    const gm = new GoalManager(sessionManagerWith([]));
-    gm.state = { phase: "ready", objective: "this is a very long objective that should be truncated" };
-    const s = gm.status();
+    const s = goalWidget({
+      phase: "ready",
+      objective: "this is a very long objective that should be truncated",
+    });
     expect(s).toBeDefined();
     // Should show first 30 chars followed by "..."
     expect(s![0]).toContain("this is a very long objective ...");
   });
 
   it("does not truncate objectives exactly 30 characters", () => {
-    const gm = new GoalManager(sessionManagerWith([]));
     const exact = "abcdefghijklmnopqrstuvwxyzABCD"; // 30 chars
-    gm.state = { phase: "ready", objective: exact };
-    const s = gm.status();
+    const s = goalWidget({ phase: "ready", objective: exact });
     expect(s).toBeDefined();
     expect(s![0]).toContain(exact);
     expect(s![0]).not.toContain("...");
   });
 
   it("returns paused status for paused state", () => {
-    const gm = new GoalManager(sessionManagerWith([]));
-    gm.state = { phase: "paused", objective: "fix bugs" };
-    const s = gm.status();
+    const s = goalWidget({ phase: "paused", objective: "fix bugs" });
     expect(s).toBeDefined();
     expect(s![0]).toContain("Paused objective");
   });

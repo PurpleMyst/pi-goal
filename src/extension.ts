@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "typebox";
 
-import { GoalManager, CUSTOM_TYPE } from "./goal_manager";
+import { GoalManager, CUSTOM_TYPE, goalWidget } from "./goal_manager";
 
 const GOAL_TOOLS = ["get_goal", "update_goal"];
 
@@ -38,7 +38,7 @@ export default function (pi: ExtensionAPI) {
       syncGoalTools(pi, gm);
       if (prompt !== undefined) sendGoalMessage(pi, prompt, gm);
       else pi.appendEntry(CUSTOM_TYPE, gm.state);
-      if (ctx.hasUI) ctx.ui.setWidget(CUSTOM_TYPE, gm.status());
+      if (ctx.hasUI) ctx.ui.setWidget(CUSTOM_TYPE, goalWidget(gm.state));
     },
   });
 
@@ -61,7 +61,7 @@ export default function (pi: ExtensionAPI) {
     const prompt = gm.continue();
     if (prompt === undefined) return;
     sendGoalMessage(pi, prompt, gm);
-    if (ctx.hasUI) ctx.ui.setWidget(CUSTOM_TYPE, gm.status());
+    if (ctx.hasUI) ctx.ui.setWidget(CUSTOM_TYPE, goalWidget(gm.state));
   });
 
   pi.on("session_start", (_, ctx) => {
