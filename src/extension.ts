@@ -1,7 +1,8 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { Type } from "typebox";
 
-import { GoalManager, CUSTOM_TYPE, goalWidget } from "./goal_manager";
+import { GoalManager, CUSTOM_TYPE } from "./goal_manager";
+import { goalWidget } from "./goal_widget";
 
 const GOAL_TOOLS = ["get_goal", "update_goal"];
 
