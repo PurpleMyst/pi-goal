@@ -6,7 +6,11 @@ import { GoalStateMachine, NO_TOOL_CALLS } from "./goal_state_machine";
 import { CUSTOM_TYPE, goalForSession } from "./goal_finder";
 
 const GOAL_TOOLS = ["get_goal", "update_goal"];
-const GOAL_COMMANDS = ["pause", "resume", "clear"];
+const GOAL_COMMANDS = [
+  { command: "pause",  description: "Pause the current goal" },
+  { command: "resume", description: "Resume a paused goal" },
+  { command: "clear",  description: "Clear the current goal" },
+];
 
 export default function (pi: ExtensionAPI) {
   pi.registerCommand("goal", {
@@ -14,8 +18,8 @@ export default function (pi: ExtensionAPI) {
     getArgumentCompletions: (argumentPrefix: string): AutocompleteItem[] | null => {
       const prefix = argumentPrefix.trim().toLowerCase();
       const filtered = GOAL_COMMANDS
-        .filter((c) => c.startsWith(prefix))
-        .map((c) => ({ value: c, label: c }));
+        .filter((c) => c.command.startsWith(prefix))
+        .map((c) => ({ value: c.command, label: c.command, description: c.description }));
       return filtered.length > 0 ? filtered : null;
     },
     async handler(args, ctx) {
