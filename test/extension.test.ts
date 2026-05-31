@@ -185,6 +185,17 @@ describe("extension", () => {
     expect(bag.notifyCalls[0].message).toContain('"idle"');
   });
 
+  it("/goal with empty args when blocked shows state via notify", async () => {
+    const cmd = bag.commands.find(c => c.name === "goal")!;
+    const ctx = buildCtx(bag);
+    bag.getEntries = () => [
+      entry({ type: "custom", customType: CUSTOM_TYPE, data: { phase: "blocked", objective: "blocked goal" } }),
+    ];
+    await cmd.handler("", ctx);
+    expect(bag.notifyCalls.length).toBe(1);
+    expect(bag.notifyCalls[0].message).toContain('"blocked"');
+  });
+
   // -- /goal <objective> ----------------------------------------------------
 
   it("/goal <objective> starts a goal and sends a continuation message", async () => {
@@ -302,6 +313,31 @@ describe("extension", () => {
     expect(result.details).toEqual({ objective: "build stuff", phase: "ready" });
   });
 
+  it("get_goal returns blocker details when blocked", async () => {
+    bag.getEntries = () => [
+      entry({ type: "custom", customType: CUSTOM_TYPE, data: { phase: "blocked", objective: "build stuff", blocker: "missing API key" } }),
+    ];
+    const tool = bag.tools.find(t => t.name === "get_goal")!;
+    const ctx = buildCtx(bag);
+    const result = await tool.execute("id1", {}, undefined, undefined, ctx);
+    expect(result.content[0].text).toContain("Objective: build stuff");
+    expect(result.content[0].text).toContain("Status: blocked");
+    expect(result.content[0].text).toContain("Blocker: missing API key");
+    expect(result.details).toEqual({ objective: "build stuff", phase: "blocked", blocker: "missing API key" });
+  });
+
+  it("get_goal returns blocked without blocker when no reason given", async () => {
+    bag.getEntries = () => [
+      entry({ type: "custom", customType: CUSTOM_TYPE, data: { phase: "blocked", objective: "build stuff" } }),
+    ];
+    const tool = bag.tools.find(t => t.name === "get_goal")!;
+    const ctx = buildCtx(bag);
+    const result = await tool.execute("id1", {}, undefined, undefined, ctx);
+    expect(result.content[0].text).toContain("Status: blocked");
+    expect(result.content[0].text).not.toContain("Blocker:");
+    expect(result.details).toEqual({ objective: "build stuff", phase: "blocked", blocker: undefined });
+  });
+
   // -- update_goal tool -----------------------------------------------------
 
   it("update_goal with status 'complete' completes the goal", async () => {
@@ -322,13 +358,124 @@ describe("extension", () => {
     expect(bag.setWidgetCalls[0].content).toBeUndefined();
   });
 
-  it("update_goal throws when not ready", async () => {
+  it("update_goal throws when not ready (complete)", async () => {
     bag.getEntries = () => [];
     const tool = bag.tools.find(t => t.name === "update_goal")!;
     const ctx = buildCtx(bag);
     await expect(
       tool.execute("id1", { status: "complete" }, undefined, undefined, ctx),
     ).rejects.toThrow("Cannot complete goal while not ready");
+  });
+
+  it("update_goal throws when not ready (blocked)", async () => {
+    bag.getEntries = () => [];
+    const tool = bag.tools.find(t => t.name === "update_goal")!;
+    const ctx = buildCtx(bag);
+    await expect(
+      tool.execute("id1", { status: "blocked", reason: "stuck" }, undefined, undefined, ctx),
+    ).rejects.toThrow("Cannot block goal while not ready");
+  });
+
+  it("update_goal with status 'blocked' blocks the goal with reason", async () => {
+    bag.getEntries = () => [
+      entry({ type: "custom", customType: CUSTOM_TYPE, data: { phase: "ready", objective: "finish me" } }),
+    ];
+    const tool = bag.tools.find(t => t.name === "update_goal")!;
+    const ctx = buildCtx(bag);
+
+    const result = await tool.execute("id1", { status: "blocked", reason: "missing API key" }, undefined, undefined, ctx);
+
+    expect(result.content[0].text).toBe("Goal marked blocked: missing API key");
+    expect(bag.appendEntryCalls.length).toBe(1);
+    expect((bag.appendEntryCalls[0].data as any).phase).toBe("blocked");
+    expect((bag.appendEntryCalls[0].data as any).blocker).toBe("missing API key");
+    expect(bag.notifyCalls.length).toBe(1);
+    expect(bag.notifyCalls[0].message).toContain("missing API key");
+    expect(bag.notifyCalls[0].type).toBe("warning");
+  });
+
+  it("update_goal with status 'blocked' blocks the goal without reason", async () => {
+    bag.getEntries = () => [
+      entry({ type: "custom", customType: CUSTOM_TYPE, data: { phase: "ready", objective: "finish me" } }),
+    ];
+    const tool = bag.tools.find(t => t.name === "update_goal")!;
+    const ctx = buildCtx(bag);
+
+    const result = await tool.execute("id1", { status: "blocked" }, undefined, undefined, ctx);
+
+    expect(result.content[0].text).toBe("Goal marked blocked.");
+    expect(bag.appendEntryCalls.length).toBe(1);
+    expect((bag.appendEntryCalls[0].data as any).phase).toBe("blocked");
+  });
+
+  it("/goal pause on blocked goal shows helpful notification", async () => {
+    const cmd = bag.commands.find(c => c.name === "goal")!;
+    const ctx = buildCtx(bag);
+
+    bag.getEntries = () => [
+      entry({ type: "custom", customType: CUSTOM_TYPE, data: { phase: "blocked", objective: "blocked goal" } }),
+    ];
+
+    await cmd.handler("pause", ctx);
+
+    expect(bag.notifyCalls.length).toBe(1);
+    expect(bag.notifyCalls[0].message).toContain("already blocked");
+    expect(bag.appendEntryCalls.length).toBe(0);
+  });
+
+  it("/goal pause on paused goal shows helpful notification", async () => {
+    const cmd = bag.commands.find(c => c.name === "goal")!;
+    const ctx = buildCtx(bag);
+
+    bag.getEntries = () => [
+      entry({ type: "custom", customType: CUSTOM_TYPE, data: { phase: "paused", objective: "paused goal" } }),
+    ];
+
+    await cmd.handler("pause", ctx);
+
+    expect(bag.notifyCalls.length).toBe(1);
+    expect(bag.notifyCalls[0].message).toContain("already paused");
+    expect(bag.appendEntryCalls.length).toBe(0);
+  });
+
+  it("/goal pause on idle goal shows helpful notification", async () => {
+    const cmd = bag.commands.find(c => c.name === "goal")!;
+    const ctx = buildCtx(bag);
+
+    await cmd.handler("pause", ctx);
+
+    expect(bag.notifyCalls.length).toBe(1);
+    expect(bag.notifyCalls[0].message).toContain("No active goal");
+    expect(bag.appendEntryCalls.length).toBe(0);
+  });
+
+  it("/goal resume resumes a blocked goal and sends continuation", async () => {
+    const cmd = bag.commands.find(c => c.name === "goal")!;
+    const ctx = buildCtx(bag);
+
+    bag.getEntries = () => [
+      entry({ type: "custom", customType: CUSTOM_TYPE, data: { phase: "blocked", objective: "blocked goal" } }),
+    ];
+
+    await cmd.handler("resume", ctx);
+
+    vi.runAllTimers();
+    expect(bag.sendMessageCalls.length).toBe(1);
+    expect(bag.sendMessageCalls[0].message.content).toContain("blocked goal");
+    expect(bag.setWidgetCalls.length).toBe(1);
+    expect(bag.setWidgetCalls[0].content![0]).toContain("blocked goal");
+  });
+
+  it("/goal resume on idle goal shows helpful notification", async () => {
+    const cmd = bag.commands.find(c => c.name === "goal")!;
+    const ctx = buildCtx(bag);
+
+    await cmd.handler("resume", ctx);
+
+    expect(bag.notifyCalls.length).toBe(1);
+    expect(bag.notifyCalls[0].message).toContain("No paused or blocked goal");
+    expect(bag.appendEntryCalls.length).toBe(0);
+    expect(bag.sendMessageCalls.length).toBe(0);
   });
 
   // -- session_start event --------------------------------------------------

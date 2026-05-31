@@ -26,7 +26,14 @@ export function continuationPrompt(objective: string): string {
     "",
     'Do not rely on intent, partial progress, elapsed effort, memory of earlier work, or a plausible final answer as proof of completion. Only mark the goal achieved when the audit shows that the objective has actually been achieved and no required work remains. If any requirement is missing, incomplete, or unverified, keep working instead of marking the goal complete. If the objective is achieved, call update_goal with status "complete" so usage accounting is preserved. Report the final elapsed time, and if the achieved goal has a token budget, report the final consumed token budget to the user after update_goal succeeds.',
     "",
-    "Do not call update_goal unless the goal is complete. Do not mark a goal complete merely because the budget is nearly exhausted or because you are stopping work.",
+    "Blocked audit:",
+    '- Do not call update_goal with status "blocked" the first time a blocker appears.',
+    '- Only use status "blocked" when the same blocking condition has repeated for at least three consecutive goal turns, counting the original turn and any automatic goal continuations.',
+    '- If the user resumes a goal that was previously marked "blocked", treat the resumed run as a fresh blocked audit.',
+    '- Use status "blocked" only when you are truly at an impasse and cannot make meaningful progress without user input or an external-state change.',
+    '- Once the blocked threshold is satisfied, do not keep reporting that you are still blocked while leaving the goal active; call update_goal with status "blocked".',
+    '- Never use status "blocked" merely because the work is hard, slow, uncertain, incomplete, or would benefit from clarification.',
+    '- Only call update_goal to report genuine state changes: status "complete" when the objective is achieved, or status "blocked" when the blocked-audit threshold is met. Do not call update_goal for any other reason.',
   ];
   return lines.join("\n");
 }

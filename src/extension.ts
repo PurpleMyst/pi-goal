@@ -16,8 +16,23 @@ export default function (pi: ExtensionAPI) {
         ctx.ui.notify(JSON.stringify(gm.state));
         return;
       } else if (args.trim().toLowerCase() === "pause") {
-        gm.pause();
+        if (gm.state.phase === "blocked") {
+          ctx.ui.notify("Goal is already blocked. Use /goal resume to continue or /goal clear to abandon it.", "warning");
+          return;
+        } else if (gm.state.phase === "paused") {
+          ctx.ui.notify("Goal is already paused. Use /goal resume to continue or /goal clear to abandon it.", "warning");
+          return;
+        } else if (gm.state.phase === "idle") {
+          ctx.ui.notify("No active goal to pause.", "warning");
+          return;
+        } else {
+          gm.pause();
+        }
       } else if (args.trim().toLowerCase() === "resume") {
+        if (gm.state.phase !== "paused" && gm.state.phase !== "blocked") {
+          ctx.ui.notify("No paused or blocked goal to resume.", "warning");
+          return;
+        }
         prompt = gm.resume();
       } else if (args.trim().toLowerCase() === "clear") {
         gm.clear();
@@ -90,6 +105,13 @@ export default function (pi: ExtensionAPI) {
       if (gm.state.phase === "idle") {
         return { content: [{ type: "text", text: "No active goal." }], details: {} };
       }
+      if (gm.state.phase === "blocked") {
+        const text = `Objective: ${gm.state.objective}\nStatus: blocked${gm.state.blocker ? `\nBlocker: ${gm.state.blocker}` : ""}`;
+        return {
+          content: [{ type: "text", text }],
+          details: { objective: gm.state.objective, phase: gm.state.phase, blocker: gm.state.blocker },
+        };
+      }
       return {
         content: [
           {
@@ -106,19 +128,34 @@ export default function (pi: ExtensionAPI) {
     name: "update_goal",
     label: "Update Goal Status",
     description:
-      'Update the status of the current goal. Call with status "complete" when the goal is achieved. Do not mark a goal complete merely because you are stopping work or the budget is running out — only mark it complete when the objective has actually been achieved and no required work remains.',
+      'Update the status of the current goal. Call with status "complete" when the objective is fully achieved and no required work remains. Call with status "blocked" when you are at a genuine impasse and cannot make further progress without user input — only after the same blocking condition has repeated for at least three consecutive goal turns (see the blocked-audit rules in your system prompt). Do not call this tool for any other reason.',
     parameters: Type.Object({
-      status: Type.Literal("complete"),
+      status: Type.Union([Type.Literal("complete"), Type.Literal("blocked")]),
+      reason: Type.Optional(Type.String({ description: "Why the goal is blocked. Recommended when status is blocked." })),
     }),
-    async execute(_toolCallId, _params, _signal, _onUpdate, ctx) {
+    async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
       const gm = new GoalStateMachine(goalForSession(ctx.sessionManager));
-      gm.complete();
-      pi.appendEntry(CUSTOM_TYPE, gm.state);
-      syncPiState(pi, ctx, gm);
-      return {
-        content: [{ type: "text", text: "Goal marked complete." }],
-        details: {}
-      };
+      if (params.status === "complete") {
+        gm.complete();
+        pi.appendEntry(CUSTOM_TYPE, gm.state);
+        syncPiState(pi, ctx, gm);
+        return {
+          content: [{ type: "text", text: "Goal marked complete." }],
+          details: {}
+        };
+      } else {
+        gm.block(params.reason);
+        pi.appendEntry(CUSTOM_TYPE, gm.state);
+        syncPiState(pi, ctx, gm);
+        const msg = params.reason
+          ? `Goal marked blocked: ${params.reason}`
+          : "Goal marked blocked.";
+        ctx.ui.notify(msg, "warning");
+        return {
+          content: [{ type: "text", text: msg }],
+          details: {}
+        };
+      }
     },
   });
 }

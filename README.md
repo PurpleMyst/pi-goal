@@ -17,13 +17,14 @@ pi install git:github.com/PurpleMyst/pi-goal
 - Run `/goal pause` to pause the agent; it will still allow the current turn to end, but there will
   be no new turns until the goal is resumed.
 - Aborting the agent will set the goal to "paused". This is useful if you want to take a break and come back to the same goal later.
-- Run `/goal resume` to resume the last goal. This is useful if you want to continue working on a goal after a break.
+- Run `/goal resume` to resume the last goal. This is useful if you want to continue working on a goal after a break, and also works for goals that the agent has marked as blocked.
 - Run `/goal clear` to clear the goal.
 - Run `/goal` to show the current goal.
+- The agent can self-report being blocked when it encounters a genuine impasse it cannot resolve without user input. This happens automatically after the same blocking condition repeats for at least three consecutive goal turns. Use `/goal resume` to continue a blocked goal.
 
 ## Credits
 
-- [Codex](https://github.com/openai/codex) for the original implementation.
+- [Codex](https://github.com/openai/codex) for the original implementation, including the blocked-audit rules and continuation-prompt design ([source](https://github.com/openai/codex/blob/main/codex-rs/core/templates/goals/continuation.md)).
 - Geoffrey Huntley's [Ralph Wiggum](https://ghuntley.com/ralph/) for the general pattern.
 - [`@tmustier/pi-ralph-wiggum`](https://github.com/tmustier/pi-extensions/tree/main/pi-ralph-wiggum) for a prior Pi implementation of that idea.
 

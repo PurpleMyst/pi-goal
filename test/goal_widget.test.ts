@@ -41,4 +41,25 @@ describe("goalWidget", () => {
     expect(s).toBeDefined();
     expect(s[0]).toContain("fix bugs");
   });
+
+  it("returns blocked status for blocked state with blocker", () => {
+    const s = goalWidget(mockTheme, { phase: "blocked", objective: "fix bugs", blocker: "missing API key" });
+    expect(s).toBeDefined();
+    expect(s[0]).toContain("fix bugs");
+    expect(s[0]).toContain("missing API key");
+  });
+
+  it("returns blocked status for blocked state without blocker", () => {
+    const s = goalWidget(mockTheme, { phase: "blocked", objective: "fix bugs" });
+    expect(s).toBeDefined();
+    expect(s[0]).toContain("fix bugs");
+  });
+
+  it("truncates blocker text longer than 20 characters", () => {
+    const longBlocker = "this is a very long blocker reason";
+    const s = goalWidget(mockTheme, { phase: "blocked", objective: "fix bugs", blocker: longBlocker });
+    expect(s).toBeDefined();
+    // Should contain truncated blocker with ellipsis
+    expect(s[0]).toContain("…");
+  });
 });
