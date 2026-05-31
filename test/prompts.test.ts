@@ -56,23 +56,29 @@ describe("continuationPrompt", () => {
     expect(prompt).toContain("Continue working toward the active thread goal.");
   });
 
-  it('includes the warning not to use blocked merely because work is hard', () => {
+  it("includes the warning not to use blocked merely because work is hard", () => {
     const prompt = continuationPrompt("do stuff");
     expect(prompt).toContain(
       'Never use status "blocked" merely because the work is hard, slow, uncertain, incomplete, or would benefit from clarification',
     );
   });
 
-  it('includes the blocked audit section', () => {
+  it("includes the blocked audit section", () => {
     const prompt = continuationPrompt("do stuff");
     expect(prompt).toContain("Blocked audit:");
-    expect(prompt).toContain('Do not call update_goal with status "blocked" the first time a blocker appears');
-    expect(prompt).toContain('Only use status "blocked" when the same blocking condition has repeated for at least three consecutive goal turns');
+    expect(prompt).toContain(
+      'Do not call update_goal with status "blocked" the first time a blocker appears',
+    );
+    expect(prompt).toContain(
+      'Only use status "blocked" when the same blocking condition has repeated for at least three consecutive goal turns',
+    );
     expect(prompt).toContain('Never use status "blocked" merely because the work is hard');
   });
 
-  it('includes the updated update_goal instruction mentioning both complete and blocked', () => {
+  it("includes the updated update_goal instruction mentioning both complete and blocked", () => {
     const prompt = continuationPrompt("do stuff");
-    expect(prompt).toContain('status "complete" when the objective is achieved, or status "blocked" when the blocked-audit threshold is met');
+    expect(prompt).toContain(
+      'status "complete" when the objective is achieved, or status "blocked" when the blocked-audit threshold is met',
+    );
   });
 });

@@ -24,7 +24,10 @@ export class GoalStateMachine {
     confirmIfPaused: () => Promise<boolean> | boolean,
   ): Promise<string> {
     if (this.state.phase !== "idle") {
-      if ((this.state.phase === "paused" || this.state.phase === "blocked") && (await confirmIfPaused())) {
+      if (
+        (this.state.phase === "paused" || this.state.phase === "blocked") &&
+        (await confirmIfPaused())
+      ) {
         // fall through to start
       } else {
         throw new Error("Cannot set objective while not idle");
@@ -44,7 +47,11 @@ export class GoalStateMachine {
 
   block(reason?: string) {
     if (this.state.phase !== "ready") throw new Error("Cannot block goal while not ready");
-    this.state = { phase: "blocked", objective: this.state.objective, blocker: reason?.trim() || undefined };
+    this.state = {
+      phase: "blocked",
+      objective: this.state.objective,
+      blocker: reason?.trim() || undefined,
+    };
   }
 
   continue(): string | typeof NO_TOOL_CALLS | undefined {

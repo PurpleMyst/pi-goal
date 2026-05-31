@@ -4,7 +4,12 @@ import { goalForSession, CUSTOM_TYPE } from "../src/goal_finder";
 import type { SessionEntry } from "@mariozechner/pi-coding-agent";
 
 function makeEntry(
-  overrides: Partial<SessionEntry> & { type: string; customType?: string; data?: unknown; details?: unknown },
+  overrides: Partial<SessionEntry> & {
+    type: string;
+    customType?: string;
+    data?: unknown;
+    details?: unknown;
+  },
 ): SessionEntry {
   const base = {
     id: crypto.randomUUID?.() ?? Math.random().toString(36),
@@ -36,7 +41,11 @@ describe("goalForSession", () => {
   it("reads ready state from the last matching custom entry", () => {
     const entries = [
       makeEntry({ type: "message" }),
-      makeEntry({ type: "custom", customType: CUSTOM_TYPE, data: { phase: "ready", objective: "ship it" } }),
+      makeEntry({
+        type: "custom",
+        customType: CUSTOM_TYPE,
+        data: { phase: "ready", objective: "ship it" },
+      }),
     ];
     const state = goalForSession(sessionManagerWith(entries));
     expect(state).toEqual({ phase: "ready", objective: "ship it" });
@@ -44,7 +53,11 @@ describe("goalForSession", () => {
 
   it("reads paused state from the last matching custom entry", () => {
     const entries = [
-      makeEntry({ type: "custom", customType: CUSTOM_TYPE, data: { phase: "paused", objective: "do thing" } }),
+      makeEntry({
+        type: "custom",
+        customType: CUSTOM_TYPE,
+        data: { phase: "paused", objective: "do thing" },
+      }),
     ];
     const state = goalForSession(sessionManagerWith(entries));
     expect(state).toEqual({ phase: "paused", objective: "do thing" });
@@ -65,13 +78,16 @@ describe("goalForSession", () => {
   it("picks the most recent matching entry (entries are reversed internally)", () => {
     const entries = [
       makeEntry({ type: "custom", customType: CUSTOM_TYPE, data: { phase: "idle" } }),
-      makeEntry({ type: "custom", customType: CUSTOM_TYPE, data: { phase: "ready", objective: "later" } }),
+      makeEntry({
+        type: "custom",
+        customType: CUSTOM_TYPE,
+        data: { phase: "ready", objective: "later" },
+      }),
     ];
     const state = goalForSession(sessionManagerWith(entries));
     expect(state).toEqual({ phase: "ready", objective: "later" });
   });
 });
-
 
 // ---------------------------------------------------------------------------
 // GoalStateMachine.start()
@@ -85,7 +101,9 @@ describe("GoalStateMachine.start", () => {
 
   it("throws when not idle", async () => {
     gm.state = { phase: "ready", objective: "already running" };
-    await expect(gm.start("new goal", () => false)).rejects.toThrow("Cannot set objective while not idle");
+    await expect(gm.start("new goal", () => false)).rejects.toThrow(
+      "Cannot set objective while not idle",
+    );
   });
 
   it("sets state to ready and returns a continuation prompt", async () => {
@@ -192,7 +210,11 @@ describe("GoalStateMachine.block", () => {
   it("transitions from ready to blocked with reason", () => {
     const gm = new GoalStateMachine({ phase: "ready", objective: "active work" });
     gm.block("missing API key");
-    expect(gm.state).toEqual({ phase: "blocked", objective: "active work", blocker: "missing API key" });
+    expect(gm.state).toEqual({
+      phase: "blocked",
+      objective: "active work",
+      blocker: "missing API key",
+    });
   });
 
   it("transitions from ready to blocked without reason", () => {
@@ -284,7 +306,9 @@ describe("GoalStateMachine.start from blocked", () => {
 
   it("throws when blocked and confirmation is false", async () => {
     const gm = new GoalStateMachine({ phase: "blocked", objective: "old goal" });
-    await expect(gm.start("new goal", () => false)).rejects.toThrow("Cannot set objective while not idle");
+    await expect(gm.start("new goal", () => false)).rejects.toThrow(
+      "Cannot set objective while not idle",
+    );
   });
 });
 
@@ -294,7 +318,11 @@ describe("GoalStateMachine.start from blocked", () => {
 describe("goalForSession blocked", () => {
   it("reads blocked state from the last matching custom entry", () => {
     const entries = [
-      makeEntry({ type: "custom", customType: CUSTOM_TYPE, data: { phase: "blocked", objective: "stuck", blocker: "missing key" } }),
+      makeEntry({
+        type: "custom",
+        customType: CUSTOM_TYPE,
+        data: { phase: "blocked", objective: "stuck", blocker: "missing key" },
+      }),
     ];
     const state = goalForSession(sessionManagerWith(entries));
     expect(state).toEqual({ phase: "blocked", objective: "stuck", blocker: "missing key" });
@@ -302,7 +330,11 @@ describe("goalForSession blocked", () => {
 
   it("reads blocked state without blocker", () => {
     const entries = [
-      makeEntry({ type: "custom", customType: CUSTOM_TYPE, data: { phase: "blocked", objective: "stuck" } }),
+      makeEntry({
+        type: "custom",
+        customType: CUSTOM_TYPE,
+        data: { phase: "blocked", objective: "stuck" },
+      }),
     ];
     const state = goalForSession(sessionManagerWith(entries));
     expect(state).toEqual({ phase: "blocked", objective: "stuck" });

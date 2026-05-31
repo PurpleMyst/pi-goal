@@ -36,9 +36,7 @@ export default function (theme: Theme, state: GoalState): string[] {
   if (state.phase === "blocked") {
     const prefix = "🚫 " + theme.fg("error", "Blocked: ");
     const obj = truncateToWidth(state.objective, maxObjLen, "…");
-    const blocker = state.blocker
-      ? " · " + truncateToWidth(state.blocker, 20, "…")
-      : "";
+    const blocker = state.blocker ? " · " + truncateToWidth(state.blocker, 20, "…") : "";
     const line = prefix + obj + blocker;
     return [line];
   }

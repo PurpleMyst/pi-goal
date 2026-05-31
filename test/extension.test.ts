@@ -8,7 +8,14 @@ import { CUSTOM_TYPE } from "../src/goal_finder";
 // ---------------------------------------------------------------------------
 
 /** Build a minimal SessionEntry-like object for use in getEntries(). */
-function entry(overrides: Partial<SessionEntry> & { type: string; customType?: string; data?: unknown; details?: unknown }): SessionEntry {
+function entry(
+  overrides: Partial<SessionEntry> & {
+    type: string;
+    customType?: string;
+    data?: unknown;
+    details?: unknown;
+  },
+): SessionEntry {
   const base = {
     id: crypto.randomUUID?.() ?? Math.random().toString(36),
     parentId: null,
@@ -158,18 +165,18 @@ describe("extension", () => {
   // -- registration ---------------------------------------------------------
 
   it("registers the goal command", () => {
-    expect(bag.commands.some(c => c.name === "goal")).toBe(true);
+    expect(bag.commands.some((c) => c.name === "goal")).toBe(true);
   });
 
   it("registers event handlers for turn_end, agent_end, session_start", () => {
-    const events = bag.handlers.map(h => h.event);
+    const events = bag.handlers.map((h) => h.event);
     expect(events).toContain("turn_end");
     expect(events).toContain("agent_end");
     expect(events).toContain("session_start");
   });
 
   it("registers get_goal and update_goal tools", () => {
-    const names = bag.tools.map(t => t.name);
+    const names = bag.tools.map((t) => t.name);
     expect(names).toContain("get_goal");
     expect(names).toContain("update_goal");
   });
@@ -177,7 +184,7 @@ describe("extension", () => {
   // -- /goal <empty> (idle) -------------------------------------------------
 
   it("/goal with empty args when idle shows state via notify", async () => {
-    const cmd = bag.commands.find(c => c.name === "goal")!;
+    const cmd = bag.commands.find((c) => c.name === "goal")!;
     const ctx = buildCtx(bag);
     await cmd.handler("", ctx);
     // idle → shows JSON state
@@ -186,10 +193,14 @@ describe("extension", () => {
   });
 
   it("/goal with empty args when blocked shows state via notify", async () => {
-    const cmd = bag.commands.find(c => c.name === "goal")!;
+    const cmd = bag.commands.find((c) => c.name === "goal")!;
     const ctx = buildCtx(bag);
     bag.getEntries = () => [
-      entry({ type: "custom", customType: CUSTOM_TYPE, data: { phase: "blocked", objective: "blocked goal" } }),
+      entry({
+        type: "custom",
+        customType: CUSTOM_TYPE,
+        data: { phase: "blocked", objective: "blocked goal" },
+      }),
     ];
     await cmd.handler("", ctx);
     expect(bag.notifyCalls.length).toBe(1);
@@ -199,7 +210,7 @@ describe("extension", () => {
   // -- /goal <objective> ----------------------------------------------------
 
   it("/goal <objective> starts a goal and sends a continuation message", async () => {
-    const cmd = bag.commands.find(c => c.name === "goal")!;
+    const cmd = bag.commands.find((c) => c.name === "goal")!;
     const ctx = buildCtx(bag);
     await cmd.handler("write unit tests", ctx);
 
@@ -228,7 +239,7 @@ describe("extension", () => {
 
   it("/goal pause pauses the goal and appends state entry", async () => {
     // Start a goal first so we have something to pause
-    const cmd = bag.commands.find(c => c.name === "goal")!;
+    const cmd = bag.commands.find((c) => c.name === "goal")!;
     const ctx = buildCtx(bag);
 
     // First set the goal
@@ -238,7 +249,11 @@ describe("extension", () => {
 
     // Now feed the entry so the next GoalStateMachine picks it up
     bag.getEntries = () => [
-      entry({ type: "custom", customType: CUSTOM_TYPE, data: { phase: "ready", objective: "some objective" } }),
+      entry({
+        type: "custom",
+        customType: CUSTOM_TYPE,
+        data: { phase: "ready", objective: "some objective" },
+      }),
     ];
 
     // Reset bag
@@ -258,12 +273,16 @@ describe("extension", () => {
   // -- /goal resume ---------------------------------------------------------
 
   it("/goal resume resumes a paused goal and sends continuation", async () => {
-    const cmd = bag.commands.find(c => c.name === "goal")!;
+    const cmd = bag.commands.find((c) => c.name === "goal")!;
     const ctx = buildCtx(bag);
 
     // Feed state as paused
     bag.getEntries = () => [
-      entry({ type: "custom", customType: CUSTOM_TYPE, data: { phase: "paused", objective: "paused goal" } }),
+      entry({
+        type: "custom",
+        customType: CUSTOM_TYPE,
+        data: { phase: "paused", objective: "paused goal" },
+      }),
     ];
 
     await cmd.handler("resume", ctx);
@@ -278,11 +297,15 @@ describe("extension", () => {
   // -- /goal clear ----------------------------------------------------------
 
   it("/goal clear clears the goal and appends idle state", async () => {
-    const cmd = bag.commands.find(c => c.name === "goal")!;
+    const cmd = bag.commands.find((c) => c.name === "goal")!;
     const ctx = buildCtx(bag);
 
     bag.getEntries = () => [
-      entry({ type: "custom", customType: CUSTOM_TYPE, data: { phase: "ready", objective: "to be cleared" } }),
+      entry({
+        type: "custom",
+        customType: CUSTOM_TYPE,
+        data: { phase: "ready", objective: "to be cleared" },
+      }),
     ];
 
     await cmd.handler("clear", ctx);
@@ -295,7 +318,7 @@ describe("extension", () => {
   // -- get_goal tool --------------------------------------------------------
 
   it("get_goal returns 'No active goal.' when idle", async () => {
-    const tool = bag.tools.find(t => t.name === "get_goal")!;
+    const tool = bag.tools.find((t) => t.name === "get_goal")!;
     const ctx = buildCtx(bag);
     const result = await tool.execute("id1", {}, undefined, undefined, ctx);
     expect(result.content[0].text).toBe("No active goal.");
@@ -303,9 +326,13 @@ describe("extension", () => {
 
   it("get_goal returns objective and phase when a goal is active", async () => {
     bag.getEntries = () => [
-      entry({ type: "custom", customType: CUSTOM_TYPE, data: { phase: "ready", objective: "build stuff" } }),
+      entry({
+        type: "custom",
+        customType: CUSTOM_TYPE,
+        data: { phase: "ready", objective: "build stuff" },
+      }),
     ];
-    const tool = bag.tools.find(t => t.name === "get_goal")!;
+    const tool = bag.tools.find((t) => t.name === "get_goal")!;
     const ctx = buildCtx(bag);
     const result = await tool.execute("id1", {}, undefined, undefined, ctx);
     expect(result.content[0].text).toContain("Objective: build stuff");
@@ -315,36 +342,56 @@ describe("extension", () => {
 
   it("get_goal returns blocker details when blocked", async () => {
     bag.getEntries = () => [
-      entry({ type: "custom", customType: CUSTOM_TYPE, data: { phase: "blocked", objective: "build stuff", blocker: "missing API key" } }),
+      entry({
+        type: "custom",
+        customType: CUSTOM_TYPE,
+        data: { phase: "blocked", objective: "build stuff", blocker: "missing API key" },
+      }),
     ];
-    const tool = bag.tools.find(t => t.name === "get_goal")!;
+    const tool = bag.tools.find((t) => t.name === "get_goal")!;
     const ctx = buildCtx(bag);
     const result = await tool.execute("id1", {}, undefined, undefined, ctx);
     expect(result.content[0].text).toContain("Objective: build stuff");
     expect(result.content[0].text).toContain("Status: blocked");
     expect(result.content[0].text).toContain("Blocker: missing API key");
-    expect(result.details).toEqual({ objective: "build stuff", phase: "blocked", blocker: "missing API key" });
+    expect(result.details).toEqual({
+      objective: "build stuff",
+      phase: "blocked",
+      blocker: "missing API key",
+    });
   });
 
   it("get_goal returns blocked without blocker when no reason given", async () => {
     bag.getEntries = () => [
-      entry({ type: "custom", customType: CUSTOM_TYPE, data: { phase: "blocked", objective: "build stuff" } }),
+      entry({
+        type: "custom",
+        customType: CUSTOM_TYPE,
+        data: { phase: "blocked", objective: "build stuff" },
+      }),
     ];
-    const tool = bag.tools.find(t => t.name === "get_goal")!;
+    const tool = bag.tools.find((t) => t.name === "get_goal")!;
     const ctx = buildCtx(bag);
     const result = await tool.execute("id1", {}, undefined, undefined, ctx);
     expect(result.content[0].text).toContain("Status: blocked");
     expect(result.content[0].text).not.toContain("Blocker:");
-    expect(result.details).toEqual({ objective: "build stuff", phase: "blocked", blocker: undefined });
+    expect(result.details).toEqual({
+      objective: "build stuff",
+      phase: "blocked",
+      blocker: undefined,
+    });
   });
 
   // -- update_goal tool -----------------------------------------------------
 
   it("update_goal with status 'complete' completes the goal", async () => {
     bag.getEntries = () => [
-      entry({ type: "custom", customType: CUSTOM_TYPE, data: { phase: "ready", objective: "finish me" } }),
+      entry({
+        type: "custom",
+        customType: CUSTOM_TYPE,
+        data: { phase: "ready", objective: "finish me" },
+      }),
     ];
-    const tool = bag.tools.find(t => t.name === "update_goal")!;
+    const tool = bag.tools.find((t) => t.name === "update_goal")!;
     const ctx = buildCtx(bag);
 
     const result = await tool.execute("id1", { status: "complete" }, undefined, undefined, ctx);
@@ -360,7 +407,7 @@ describe("extension", () => {
 
   it("update_goal throws when not ready (complete)", async () => {
     bag.getEntries = () => [];
-    const tool = bag.tools.find(t => t.name === "update_goal")!;
+    const tool = bag.tools.find((t) => t.name === "update_goal")!;
     const ctx = buildCtx(bag);
     await expect(
       tool.execute("id1", { status: "complete" }, undefined, undefined, ctx),
@@ -369,7 +416,7 @@ describe("extension", () => {
 
   it("update_goal throws when not ready (blocked)", async () => {
     bag.getEntries = () => [];
-    const tool = bag.tools.find(t => t.name === "update_goal")!;
+    const tool = bag.tools.find((t) => t.name === "update_goal")!;
     const ctx = buildCtx(bag);
     await expect(
       tool.execute("id1", { status: "blocked", reason: "stuck" }, undefined, undefined, ctx),
@@ -378,12 +425,22 @@ describe("extension", () => {
 
   it("update_goal with status 'blocked' blocks the goal with reason", async () => {
     bag.getEntries = () => [
-      entry({ type: "custom", customType: CUSTOM_TYPE, data: { phase: "ready", objective: "finish me" } }),
+      entry({
+        type: "custom",
+        customType: CUSTOM_TYPE,
+        data: { phase: "ready", objective: "finish me" },
+      }),
     ];
-    const tool = bag.tools.find(t => t.name === "update_goal")!;
+    const tool = bag.tools.find((t) => t.name === "update_goal")!;
     const ctx = buildCtx(bag);
 
-    const result = await tool.execute("id1", { status: "blocked", reason: "missing API key" }, undefined, undefined, ctx);
+    const result = await tool.execute(
+      "id1",
+      { status: "blocked", reason: "missing API key" },
+      undefined,
+      undefined,
+      ctx,
+    );
 
     expect(result.content[0].text).toBe("Goal marked blocked: missing API key");
     expect(bag.appendEntryCalls.length).toBe(1);
@@ -396,9 +453,13 @@ describe("extension", () => {
 
   it("update_goal with status 'blocked' blocks the goal without reason", async () => {
     bag.getEntries = () => [
-      entry({ type: "custom", customType: CUSTOM_TYPE, data: { phase: "ready", objective: "finish me" } }),
+      entry({
+        type: "custom",
+        customType: CUSTOM_TYPE,
+        data: { phase: "ready", objective: "finish me" },
+      }),
     ];
-    const tool = bag.tools.find(t => t.name === "update_goal")!;
+    const tool = bag.tools.find((t) => t.name === "update_goal")!;
     const ctx = buildCtx(bag);
 
     const result = await tool.execute("id1", { status: "blocked" }, undefined, undefined, ctx);
@@ -409,11 +470,15 @@ describe("extension", () => {
   });
 
   it("/goal pause on blocked goal shows helpful notification", async () => {
-    const cmd = bag.commands.find(c => c.name === "goal")!;
+    const cmd = bag.commands.find((c) => c.name === "goal")!;
     const ctx = buildCtx(bag);
 
     bag.getEntries = () => [
-      entry({ type: "custom", customType: CUSTOM_TYPE, data: { phase: "blocked", objective: "blocked goal" } }),
+      entry({
+        type: "custom",
+        customType: CUSTOM_TYPE,
+        data: { phase: "blocked", objective: "blocked goal" },
+      }),
     ];
 
     await cmd.handler("pause", ctx);
@@ -424,11 +489,15 @@ describe("extension", () => {
   });
 
   it("/goal pause on paused goal shows helpful notification", async () => {
-    const cmd = bag.commands.find(c => c.name === "goal")!;
+    const cmd = bag.commands.find((c) => c.name === "goal")!;
     const ctx = buildCtx(bag);
 
     bag.getEntries = () => [
-      entry({ type: "custom", customType: CUSTOM_TYPE, data: { phase: "paused", objective: "paused goal" } }),
+      entry({
+        type: "custom",
+        customType: CUSTOM_TYPE,
+        data: { phase: "paused", objective: "paused goal" },
+      }),
     ];
 
     await cmd.handler("pause", ctx);
@@ -439,7 +508,7 @@ describe("extension", () => {
   });
 
   it("/goal pause on idle goal shows helpful notification", async () => {
-    const cmd = bag.commands.find(c => c.name === "goal")!;
+    const cmd = bag.commands.find((c) => c.name === "goal")!;
     const ctx = buildCtx(bag);
 
     await cmd.handler("pause", ctx);
@@ -450,11 +519,15 @@ describe("extension", () => {
   });
 
   it("/goal resume resumes a blocked goal and sends continuation", async () => {
-    const cmd = bag.commands.find(c => c.name === "goal")!;
+    const cmd = bag.commands.find((c) => c.name === "goal")!;
     const ctx = buildCtx(bag);
 
     bag.getEntries = () => [
-      entry({ type: "custom", customType: CUSTOM_TYPE, data: { phase: "blocked", objective: "blocked goal" } }),
+      entry({
+        type: "custom",
+        customType: CUSTOM_TYPE,
+        data: { phase: "blocked", objective: "blocked goal" },
+      }),
     ];
 
     await cmd.handler("resume", ctx);
@@ -467,7 +540,7 @@ describe("extension", () => {
   });
 
   it("/goal resume on idle goal shows helpful notification", async () => {
-    const cmd = bag.commands.find(c => c.name === "goal")!;
+    const cmd = bag.commands.find((c) => c.name === "goal")!;
     const ctx = buildCtx(bag);
 
     await cmd.handler("resume", ctx);
@@ -481,7 +554,7 @@ describe("extension", () => {
   // -- session_start event --------------------------------------------------
 
   it("session_start syncs goal tools based on persisted state", () => {
-    const handler = bag.handlers.find(h => h.event === "session_start")!;
+    const handler = bag.handlers.find((h) => h.event === "session_start")!;
     const ctx = buildCtx(bag);
 
     // When state is idle, goal tools should NOT be active
@@ -491,7 +564,11 @@ describe("extension", () => {
 
     // When state is ready, goal tools should be added
     bag.getEntries = () => [
-      entry({ type: "custom", customType: CUSTOM_TYPE, data: { phase: "ready", objective: "ongoing" } }),
+      entry({
+        type: "custom",
+        customType: CUSTOM_TYPE,
+        data: { phase: "ready", objective: "ongoing" },
+      }),
     ];
     handler.handler({ type: "session_start", reason: "resume" }, ctx);
     expect(bag.setActiveToolsCalls.length).toBeGreaterThan(0);
@@ -503,10 +580,14 @@ describe("extension", () => {
   // -- turn_end event -------------------------------------------------------
 
   it("turn_end with aborted signal pauses the goal", () => {
-    const handler = bag.handlers.find(h => h.event === "turn_end")!;
+    const handler = bag.handlers.find((h) => h.event === "turn_end")!;
 
     bag.getEntries = () => [
-      entry({ type: "custom", customType: CUSTOM_TYPE, data: { phase: "ready", objective: "work" } }),
+      entry({
+        type: "custom",
+        customType: CUSTOM_TYPE,
+        data: { phase: "ready", objective: "work" },
+      }),
     ];
 
     const ctx = buildCtx(bag, { signal: { aborted: true } });
@@ -521,9 +602,13 @@ describe("extension", () => {
   });
 
   it("turn_end without aborted signal does nothing", () => {
-    const handler = bag.handlers.find(h => h.event === "turn_end")!;
+    const handler = bag.handlers.find((h) => h.event === "turn_end")!;
     bag.getEntries = () => [
-      entry({ type: "custom", customType: CUSTOM_TYPE, data: { phase: "ready", objective: "work" } }),
+      entry({
+        type: "custom",
+        customType: CUSTOM_TYPE,
+        data: { phase: "ready", objective: "work" },
+      }),
     ];
     const ctx = buildCtx(bag, { signal: undefined });
     handler.handler({ type: "turn_end", turnIndex: 1, message: {} as any, toolResults: [] }, ctx);
@@ -536,10 +621,14 @@ describe("extension", () => {
   // -- agent_end event ------------------------------------------------------
 
   it("agent_end continues when goal is ready and tools were used", async () => {
-    const handler = bag.handlers.find(h => h.event === "agent_end")!;
+    const handler = bag.handlers.find((h) => h.event === "agent_end")!;
 
     bag.getEntries = () => [
-      entry({ type: "custom", customType: CUSTOM_TYPE, data: { phase: "ready", objective: "keep going", toolsUsed: 1 } }),
+      entry({
+        type: "custom",
+        customType: CUSTOM_TYPE,
+        data: { phase: "ready", objective: "keep going", toolsUsed: 1 },
+      }),
     ];
 
     const ctx = buildCtx(bag);
@@ -553,10 +642,14 @@ describe("extension", () => {
   });
 
   it("agent_end warns without sending continuation when no tools were used", async () => {
-    const handler = bag.handlers.find(h => h.event === "agent_end")!;
+    const handler = bag.handlers.find((h) => h.event === "agent_end")!;
 
     bag.getEntries = () => [
-      entry({ type: "custom", customType: CUSTOM_TYPE, data: { phase: "ready", objective: "no tools used" } }),
+      entry({
+        type: "custom",
+        customType: CUSTOM_TYPE,
+        data: { phase: "ready", objective: "no tools used" },
+      }),
     ];
 
     const ctx = buildCtx(bag);
@@ -572,7 +665,7 @@ describe("extension", () => {
   });
 
   it("agent_end does nothing when goal is idle", async () => {
-    const handler = bag.handlers.find(h => h.event === "agent_end")!;
+    const handler = bag.handlers.find((h) => h.event === "agent_end")!;
     bag.getEntries = () => [];
     const ctx = buildCtx(bag);
     await handler.handler({ type: "agent_end", messages: [] }, ctx);
@@ -584,12 +677,16 @@ describe("extension", () => {
   // -- syncPiState idempotency ----------------------------------------------
 
   it("syncPiState does not modify tools when already in correct state", () => {
-    const handler = bag.handlers.find(h => h.event === "session_start")!;
+    const handler = bag.handlers.find((h) => h.event === "session_start")!;
     bag.activeTools = ["get_goal", "update_goal"];
     bag.setActiveToolsCalls = [];
 
     bag.getEntries = () => [
-      entry({ type: "custom", customType: CUSTOM_TYPE, data: { phase: "ready", objective: "test" } }),
+      entry({
+        type: "custom",
+        customType: CUSTOM_TYPE,
+        data: { phase: "ready", objective: "test" },
+      }),
     ];
 
     handler.handler({ type: "session_start", reason: "startup" }, buildCtx(bag));
@@ -598,7 +695,7 @@ describe("extension", () => {
   });
 
   it("syncPiState removes goal tools when goal is not ready", () => {
-    const handler = bag.handlers.find(h => h.event === "session_start")!;
+    const handler = bag.handlers.find((h) => h.event === "session_start")!;
     bag.activeTools = ["get_goal", "update_goal", "other_tool"];
     bag.setActiveToolsCalls = [];
 
