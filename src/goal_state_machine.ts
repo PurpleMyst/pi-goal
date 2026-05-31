@@ -46,7 +46,9 @@ export class GoalStateMachine {
   }
 
   block(reason?: string) {
-    if (this.state.phase !== "ready") throw new Error("Cannot block goal while not ready");
+    if (this.state.phase !== "ready" && this.state.phase !== "paused") {
+      throw new Error("Cannot block goal while not ready or paused");
+    }
     this.state = {
       phase: "blocked",
       objective: this.state.objective,

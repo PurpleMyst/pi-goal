@@ -202,9 +202,17 @@ describe("GoalStateMachine.complete", () => {
 describe("GoalStateMachine.block", () => {
   it("throws when not ready", () => {
     const gm = new GoalStateMachine({ phase: "idle" });
-    expect(() => gm.block()).toThrow("Cannot block goal while not ready");
-    gm.state = { phase: "paused", objective: "paused" };
-    expect(() => gm.block()).toThrow("Cannot block goal while not ready");
+    expect(() => gm.block()).toThrow("Cannot block goal while not ready or paused");
+  });
+
+  it("allows blocking from paused state", () => {
+    const gm = new GoalStateMachine({ phase: "paused", objective: "paused goal" });
+    gm.block("found a blocker");
+    expect(gm.state).toEqual({
+      phase: "blocked",
+      objective: "paused goal",
+      blocker: "found a blocker",
+    });
   });
 
   it("transitions from ready to blocked with reason", () => {

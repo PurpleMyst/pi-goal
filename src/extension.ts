@@ -177,14 +177,8 @@ export default function (pi: ExtensionAPI) {
 /** Sync the active state of goal tools based on the current goal state, and update the UI widget. */
 function syncPiState(pi: ExtensionAPI, ctx: ExtensionContext, gm: GoalStateMachine) {
   const activeTools = pi.getActiveTools();
-  if (gm.state.phase === "ready") {
-    const missing = GOAL_TOOLS.filter((name) => !activeTools.includes(name));
-    if (missing.length > 0) pi.setActiveTools([...activeTools, ...missing]);
-  } else {
-    const toRemove = activeTools.filter((name) => GOAL_TOOLS.includes(name));
-    if (toRemove.length > 0)
-      pi.setActiveTools(activeTools.filter((name) => !GOAL_TOOLS.includes(name)));
-  }
+  const missing = GOAL_TOOLS.filter((name) => !activeTools.includes(name));
+  if (missing.length > 0) pi.setActiveTools([...activeTools, ...missing]);
   if (ctx.hasUI)
     ctx.ui.setWidget(CUSTOM_TYPE, gm.state.phase === "idle" ? undefined : gm.status(ctx.ui.theme));
 }

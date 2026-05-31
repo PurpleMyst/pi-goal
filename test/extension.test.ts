@@ -557,10 +557,11 @@ describe("extension", () => {
     const handler = bag.handlers.find((h) => h.event === "session_start")!;
     const ctx = buildCtx(bag);
 
-    // When state is idle, goal tools should NOT be active
+    // When state is idle, goal tools are still added (always kept active)
     bag.activeTools = ["foo"];
     handler.handler({ type: "session_start", reason: "startup" }, ctx);
-    expect(bag.setActiveToolsCalls.length).toBe(0);
+    expect(bag.setActiveToolsCalls.length).toBe(1);
+    expect(bag.setActiveToolsCalls[0]).toEqual(["foo", "get_goal", "update_goal"]);
 
     // When state is ready, goal tools should be added
     bag.getEntries = () => [
@@ -694,7 +695,7 @@ describe("extension", () => {
     expect(bag.setActiveToolsCalls.length).toBe(0);
   });
 
-  it("syncPiState removes goal tools when goal is not ready", () => {
+  it("syncPiState keeps goal tools active when goal is not ready", () => {
     const handler = bag.handlers.find((h) => h.event === "session_start")!;
     bag.activeTools = ["get_goal", "update_goal", "other_tool"];
     bag.setActiveToolsCalls = [];
@@ -702,7 +703,7 @@ describe("extension", () => {
     bag.getEntries = () => [];
     handler.handler({ type: "session_start", reason: "startup" }, buildCtx(bag));
 
-    expect(bag.setActiveToolsCalls.length).toBe(1);
-    expect(bag.setActiveToolsCalls[0]).toEqual(["other_tool"]);
+    // Tools are never removed — all goal tools already present, so no call
+    expect(bag.setActiveToolsCalls.length).toBe(0);
   });
 });
