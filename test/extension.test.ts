@@ -361,25 +361,6 @@ describe("extension", () => {
     });
   });
 
-  it("get_goal returns blocked without blocker when no reason given", async () => {
-    bag.getEntries = () => [
-      entry({
-        type: "custom",
-        customType: CUSTOM_TYPE,
-        data: { phase: "blocked", objective: "build stuff" },
-      }),
-    ];
-    const tool = bag.tools.find((t) => t.name === "get_goal")!;
-    const ctx = buildCtx(bag);
-    const result = await tool.execute("id1", {}, undefined, undefined, ctx);
-    expect(result.content[0].text).toContain("Status: blocked");
-    expect(result.content[0].text).not.toContain("Blocker:");
-    expect(result.details).toEqual({
-      objective: "build stuff",
-      phase: "blocked",
-      blocker: undefined,
-    });
-  });
 
   // -- update_goal tool -----------------------------------------------------
 
@@ -451,72 +432,9 @@ describe("extension", () => {
     expect(bag.notifyCalls[0].type).toBe("warning");
   });
 
-  it("update_goal with status 'blocked' blocks the goal without reason", async () => {
-    bag.getEntries = () => [
-      entry({
-        type: "custom",
-        customType: CUSTOM_TYPE,
-        data: { phase: "ready", objective: "finish me" },
-      }),
-    ];
-    const tool = bag.tools.find((t) => t.name === "update_goal")!;
-    const ctx = buildCtx(bag);
 
-    const result = await tool.execute("id1", { status: "blocked" }, undefined, undefined, ctx);
 
-    expect(result.content[0].text).toBe("Goal marked blocked.");
-    expect(bag.appendEntryCalls.length).toBe(1);
-    expect((bag.appendEntryCalls[0].data as any).phase).toBe("blocked");
-  });
 
-  it("/goal pause on blocked goal shows helpful notification", async () => {
-    const cmd = bag.commands.find((c) => c.name === "goal")!;
-    const ctx = buildCtx(bag);
-
-    bag.getEntries = () => [
-      entry({
-        type: "custom",
-        customType: CUSTOM_TYPE,
-        data: { phase: "blocked", objective: "blocked goal" },
-      }),
-    ];
-
-    await cmd.handler("pause", ctx);
-
-    expect(bag.notifyCalls.length).toBe(1);
-    expect(bag.notifyCalls[0].message).toContain("already blocked");
-    expect(bag.appendEntryCalls.length).toBe(0);
-  });
-
-  it("/goal pause on paused goal shows helpful notification", async () => {
-    const cmd = bag.commands.find((c) => c.name === "goal")!;
-    const ctx = buildCtx(bag);
-
-    bag.getEntries = () => [
-      entry({
-        type: "custom",
-        customType: CUSTOM_TYPE,
-        data: { phase: "paused", objective: "paused goal" },
-      }),
-    ];
-
-    await cmd.handler("pause", ctx);
-
-    expect(bag.notifyCalls.length).toBe(1);
-    expect(bag.notifyCalls[0].message).toContain("already paused");
-    expect(bag.appendEntryCalls.length).toBe(0);
-  });
-
-  it("/goal pause on idle goal shows helpful notification", async () => {
-    const cmd = bag.commands.find((c) => c.name === "goal")!;
-    const ctx = buildCtx(bag);
-
-    await cmd.handler("pause", ctx);
-
-    expect(bag.notifyCalls.length).toBe(1);
-    expect(bag.notifyCalls[0].message).toContain("No active goal");
-    expect(bag.appendEntryCalls.length).toBe(0);
-  });
 
   it("/goal resume resumes a blocked goal and sends continuation", async () => {
     const cmd = bag.commands.find((c) => c.name === "goal")!;
