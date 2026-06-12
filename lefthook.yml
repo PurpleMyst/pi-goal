@@ -1,0 +1,16 @@
+pre-commit:
+  parallel: false
+  commands:
+    typecheck:
+      run: pnpm typecheck
+      glob:
+        - "src/**/*.ts"
+        - "tsconfig.json"
+
+    build_dist:
+      run: pnpm build && git add dist/index.js
+      glob:
+        - "src/**/*.ts"
+        - "package.json"
+        - "tsconfig.json"
+        - "pnpm-lock.yaml"

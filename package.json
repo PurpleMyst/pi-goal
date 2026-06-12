@@ -17,24 +17,28 @@
   },
   "license": "ISC",
   "author": "PurpleMyst",
-  "type": "commonjs",
-  "main": "src/extension.ts",
+  "type": "module",
+  "main": "dist/index.js",
   "scripts": {
-    "test": "npx vitest run",
+    "build": "esbuild src/index.ts --bundle --platform=node --target=node20 --format=esm --minify --legal-comments=eof --outfile=dist/index.js --external:@mariozechner/pi-coding-agent --external:@mariozechner/pi-tui --external:@earendil-works/pi-coding-agent --external:@earendil-works/pi-ai --external:@earendil-works/pi-agent-core --external:@earendil-works/pi-tui --external:typebox",
+    "build:debug": "esbuild src/index.ts --bundle --platform=node --target=node20 --format=esm --sourcemap --outfile=dist/index.js --external:@mariozechner/pi-coding-agent --external:@mariozechner/pi-tui --external:@earendil-works/pi-coding-agent --external:@earendil-works/pi-ai --external:@earendil-works/pi-agent-core --external:@earendil-works/pi-tui --external:typebox",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
     "@mariozechner/pi-coding-agent": ">=0.69.0",
+    "@mariozechner/pi-tui": ">=0.69.0",
     "typebox": "^1.0.0"
   },
   "devDependencies": {
+    "esbuild": "^0.28.1",
     "prettier": "^3.8.3",
     "typescript": "^6.0.3",
     "vitest": "^4.1.5"
   },
   "pi": {
     "extensions": [
-      "./src/extension.ts"
+      "./dist/index.js"
     ]
   }
 }
